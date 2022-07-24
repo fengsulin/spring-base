@@ -5,6 +5,7 @@ import com.lin.spring.anno.Component;
 import com.lin.spring.anno.ComponentScan;
 import com.lin.spring.anno.Scope;
 import com.lin.spring.constant.ScopePolicy;
+import com.lin.spring.inter.InitializingBean;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -63,9 +64,20 @@ public class LinApplicationContext {
                 if (field.isAnnotationPresent(Resource.class)) {
                     String name = field.getName();
                     Object bean = getBean(name);
+                    if(bean == null){
+                        Resource annotation = field.getAnnotation(Resource.class);
+                        if(annotation.required()){
+                            throw new IllegalArgumentException();
+                        }
+
+                    }
                     field.setAccessible(true);
                     field.set(o,bean);
                 }
+            }
+            // 初始化
+            if(o instanceof InitializingBean){
+                ((InitializingBean) o).afterPropertySet();
             }
         } catch (InstantiationException e) {
             e.printStackTrace();
