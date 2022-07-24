@@ -5,12 +5,15 @@ import com.lin.spring.anno.Component;
 import com.lin.spring.anno.ComponentScan;
 import com.lin.spring.anno.Scope;
 import com.lin.spring.constant.ScopePolicy;
+import com.lin.spring.inter.BeanPostProcessor;
 import com.lin.spring.inter.InitializingBean;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LinApplicationContext {
@@ -23,6 +26,8 @@ public class LinApplicationContext {
 
     /**用于存储单例bean*/
     private Map<String,Object> beanSingleMap = new HashMap<>();
+
+    private List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
 
     /**构造方法传入一个配置类*/
     public LinApplicationContext(Class configClass) throws ClassNotFoundException {
@@ -75,9 +80,17 @@ public class LinApplicationContext {
                     field.set(o,bean);
                 }
             }
+            // 初始化前操作
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+                beanPostProcessor.postProcessBeforeInitialization(o,beanName);
+            }
             // 初始化
             if(o instanceof InitializingBean){
                 ((InitializingBean) o).afterPropertySet();
+            }
+            // 初始化后操作
+            for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+                beanPostProcessor.postProcessAfterInitialization(o,beanName);
             }
         } catch (InstantiationException e) {
             e.printStackTrace();
@@ -118,6 +131,16 @@ public class LinApplicationContext {
                     e.printStackTrace();
                 }
                 if(clazz.isAnnotationPresent(Component.class)){
+                    if (BeanPostProcessor.class.isAssignableFrom(clazz)) {
+                        try {
+                            BeanPostProcessor beanPo = (BeanPostProcessor) clazz.newInstance();
+                            beanPostProcessorList.add(beanPo);
+                        } catch (InstantiationException e) {
+                            e.printStackTrace();
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     Component componentAn = (Component) clazz.getAnnotation(Component.class);
                     String value = componentAn.value();
                     //如果value为空，则默认为类名首字母小写
