@@ -1,11 +1,13 @@
 package com.lin.spring.base;
 
+import com.lin.spring.anno.Resource;
 import com.lin.spring.anno.Component;
 import com.lin.spring.anno.ComponentScan;
 import com.lin.spring.anno.Scope;
 import com.lin.spring.constant.ScopePolicy;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,9 +57,21 @@ public class LinApplicationContext {
         Object o = null;
         try {
             o = clazz.newInstance();
+
+            // 依赖注入
+            for (Field field : clazz.getDeclaredFields()) {
+                if (field.isAnnotationPresent(Resource.class)) {
+                    String name = field.getName();
+                    Object bean = getBean(name);
+                    field.setAccessible(true);
+                    field.set(o,bean);
+                }
+            }
         } catch (InstantiationException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         return o;

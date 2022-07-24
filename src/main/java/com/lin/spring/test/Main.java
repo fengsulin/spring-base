@@ -12,7 +12,8 @@ public class Main {
         UserService userService2 = (UserService) context.getBean("userService");
 
         System.out.println(userService);
-        System.out.println(userService2);
+        userService.test();
+//        System.out.println(userService2);
 
     }
 }
